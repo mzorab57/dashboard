@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* (اختیاری) ڕەنگی بنەڕەتی ئەستێتیک */
+/* :root { color-scheme: light; } */
