@@ -2,5 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
-/* (اختیاری) ڕەنگی بنەڕەتی ئەستێتیک */
-/* :root { color-scheme: light; } */
+/* Custom animations for login page */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+  20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Animation delays */
+.animation-delay-1000 {
+  animation-delay: 1s;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Glassmorphism effects */
+.backdrop-blur-xl {
+  backdrop-filter: blur(24px);
+}
+
+/* Enhanced hover effects */
+.hover\:shadow-cyan-500\/25:hover {
+  box-shadow: 0 25px 50px -12px rgba(6, 182, 212, 0.25);
+}
+
+.hover\:shadow-purple-500\/20:hover {
+  box-shadow: 0 25px 50px -12px rgba(168, 85, 247, 0.2);
+}
+
+@layer base {
+  [type='text'],
+  [type='email'],
+  [type='url'],
+  [type='password'],
+  [type='number'],
+  [type='date'],
+  [type='datetime-local'],
+  [type='month'],
+  [type='search'],
+  [type='tel'],
+  [type='time'],
+  [type='week'],
+  [multiple],
+  textarea,
+  select {
+    @apply w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm;
+  }
+  
+  [type='checkbox'],
+  [type='radio'] {
+    @apply h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900;
+  }
+}
