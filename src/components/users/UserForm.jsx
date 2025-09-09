@@ -18,7 +18,7 @@ export default function UserForm({ user, onSubmit, onCancel, isLoading }) {
     if (user) {
       setFormData({
         full_name: user?.full_name || '',
-        // email: user?.email || '',
+        email: user?.email || '',
         phone: user?.phone || '',
         password: '', // Always empty for security
         role: user?.role || 'employee',
@@ -55,17 +55,19 @@ export default function UserForm({ user, onSubmit, onCancel, isLoading }) {
     const newErrors = {};
 
     // Full name validation
-    if (!formData.full_name.trim()) {
+    if (!formData.full_name || !formData.full_name.trim()) {
       newErrors.full_name = 'Full name is required';
     } else if (formData.full_name.trim().length < 2) {
       newErrors.full_name = 'Full name must be at least 2 characters';
     }
 
-    // Email validation
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Email validation (only for new users)
+    if (!user) {
+      if (!formData.email || !formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Please enter a valid email address';
+      }
     }
 
     // Password validation (only for new users or when changing password)
@@ -96,12 +98,16 @@ export default function UserForm({ user, onSubmit, onCancel, isLoading }) {
 
     // Prepare data for submission
     const submitData = {
-      full_name: formData.full_name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim() || null,
+      full_name: formData.full_name?.trim() || '',
+      phone: formData.phone?.trim() || null,
       role: formData.role,
       is_active: formData.is_active,
     };
+
+    // Only include email for new users (backend doesn't allow email updates)
+    if (!user) {
+      submitData.email = formData.email?.trim() || '';
+    }
 
     // Only include password if it's provided
     if (formData.password) {
@@ -142,7 +148,7 @@ export default function UserForm({ user, onSubmit, onCancel, isLoading }) {
           Email Address <span className="text-red-500">*</span>
           {user && <span className="text-xs text-gray-500 ml-2">(Cannot be changed)</span>}
         </label>
-        {/* <input
+        <input
           type="email"
           id="email"
           name="email"
@@ -158,7 +164,7 @@ export default function UserForm({ user, onSubmit, onCancel, isLoading }) {
         />
         {errors.email && (
           <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-        )} */}
+        )}
       </div>
 
       {/* Phone */}

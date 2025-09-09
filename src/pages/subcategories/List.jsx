@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/axios';
+import { getCategories } from '@/lib/categoryApi';
+import { getSubcategories, createSubcategory, updateSubcategory, deleteSubcategory } from '@/lib/subcategoryApi';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import SubcategoryForm from '@/components/subcategories/SubcategoryForm';
@@ -24,7 +25,7 @@ export default function SubcategoriesList() {
   const { data: categoriesData } = useQuery({
     queryKey: ['categories-dropdown'],
     queryFn: async () => {
-      return (await api.get('/categories/get.php', { params: { limit: 100 } })).data;
+      return await getCategories({ limit: 100 });
     }
   });
 
@@ -43,7 +44,7 @@ export default function SubcategoriesList() {
       if (selectedType) params.type = selectedType;
       if (selectedStatus) params.is_active = selectedStatus;
       
-      return (await api.get('/subcategories/get.php', { params })).data;
+      return await getSubcategories(params);
     }
   });
 
@@ -71,11 +72,7 @@ export default function SubcategoriesList() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (formData) => {
-      return await api.post('/subcategories/create.php', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      return await createSubcategory(formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subcategories'] });
@@ -91,11 +88,7 @@ export default function SubcategoriesList() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, formData }) => {
-      return await api.post(`/subcategories/update.php?id=${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      return await updateSubcategory(id, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subcategories'] });
@@ -111,7 +104,7 @@ export default function SubcategoriesList() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      return await api.post(`/subcategories/delete.php?id=${id}`);
+      return await deleteSubcategory(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subcategories'] });

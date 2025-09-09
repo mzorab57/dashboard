@@ -10,6 +10,9 @@ const nav = [
   { to: '/subcategories', label: 'Subcategories', icon: '🗃️', color: 'from-orange-500 to-orange-600' },
   { to: '/brands', label: 'Brands', icon: '🏷️', color: 'from-pink-500 to-pink-600' },
   { to: '/tags', label: 'Tags', icon: '🔖', color: 'from-indigo-500 to-indigo-600' },
+  { to: '/product-images', label: 'Product Images', icon: '🖼️', color: 'from-teal-500 to-teal-600' },
+  { to: '/product-specifications', label: 'Product Specifications', icon: '📋', color: 'from-amber-500 to-amber-600' },
+  { to: '/product-tags', label: 'Product Tags', icon: '🔖', color: 'from-yellow-500 to-yellow-600' },
   { to: '/users', label: 'Users', icon: '👥', color: 'from-cyan-500 to-cyan-600' },
 ];
 
@@ -63,7 +66,7 @@ export default function DashboardLayout() {
       </header>
 
       {/* Layout grid */}
-      <div className="mx-auto grid max-w-7xl grid-cols-12 gap-0">
+      <div className="mx-auto grid max-w-7xl grid-cols-12 gap-0  ">
         {/* Sidebar (desktop) */}
         <aside className="sticky top-16 col-span-12 hidden h-[calc(100vh-64px)] border-r border-white/20 bg-white/80 backdrop-blur-xl md:col-span-3 lg:col-span-2 md:block shadow-xl">
           <nav className="p-4 space-y-2">
@@ -80,7 +83,7 @@ export default function DashboardLayout() {
               >
                 {({ isActive }) => (
                   <>
-                    <span className="text-lg group-hover:scale-110 transition-transform duration-200">{n.icon}</span>
+                    <span className="text-lg  group-hover:scale-110 transition-transform duration-200">{n.icon}</span>
                     <span>{n.label}</span>
                     {isActive && (
                       <div className="ml-auto w-2 h-2 rounded-full bg-white/80"></div>

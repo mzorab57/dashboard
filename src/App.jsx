@@ -10,6 +10,10 @@ import SubcategoriesList from '@/pages/subcategories/List';
 import BrandsList from '@/pages/brands/List';
 import TagsList from '@/pages/tags/List';
 import UsersList from '@/pages/users/List';
+import ProductTagsList from '@/pages/product-tags/List';
+import ProductSpecificationsList from '@/pages/product-specifications/List';
+import ProductImagesList from '@/pages/product-images/List';
+
 import NotFound from '@/pages/NotFound';
 
 export default function App() {
@@ -29,6 +33,9 @@ export default function App() {
           <Route path="/brands" element={<BrandsList />} />
           <Route path="/tags" element={<TagsList />} />
           <Route path="/users" element={<UsersList />} />
+          <Route path="/product-tags" element={<ProductTagsList />} />
+          <Route path="/product-specifications" element={<ProductSpecificationsList />} />
+          <Route path="/product-images" element={<ProductImagesList />} />
           {/* دەتوانیت routes زیاتر زیاد بکەیت */}
         </Route>
       </Route>

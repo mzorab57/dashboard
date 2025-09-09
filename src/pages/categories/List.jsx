@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/axios';
+import { getCategories, createCategory, updateCategory, deleteCategory } from '@/lib/categoryApi';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import CategoryForm from '@/components/categories/CategoryForm';
@@ -23,7 +23,7 @@ export default function CategoriesList() {
       if (debouncedSearch && debouncedSearch.trim()) {
         params.q = debouncedSearch.trim();
       }
-      return (await api.get('/categories/get.php', { params })).data;
+      return await getCategories(params);
     },
     enabled: true,
     refetchOnWindowFocus: false
@@ -34,9 +34,7 @@ export default function CategoriesList() {
 
   const createMutation = useMutation({
     mutationFn: async (formData) => {
-      return await api.post('/categories/create.php', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      return await createCategory(formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
@@ -50,9 +48,7 @@ export default function CategoriesList() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, formData }) => {
-      return await api.post(`/categories/update.php?id=${id}`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      return await updateCategory(id, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);
@@ -67,7 +63,7 @@ export default function CategoriesList() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      return await api.post(`/categories/delete.php?id=${id}`);
+      return await deleteCategory(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['categories']);

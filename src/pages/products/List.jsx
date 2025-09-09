@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/productApi';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import ProductForm from '@/components/products/ProductForm';
@@ -22,7 +22,7 @@ export default function ProductsList() {
       if (debouncedSearch && debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
-      return (await api.get('/products/get.php', { params })).data;
+      return await getProducts(params);
     },
     enabled: true,
     refetchOnWindowFocus: false
@@ -30,11 +30,7 @@ export default function ProductsList() {
 
   const createMutation = useMutation({
     mutationFn: (data) => {
-      // Handle FormData for file uploads
-      const config = data instanceof FormData ? {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      } : {};
-      return api.post('/products/create.php', data, config);
+      return createProduct(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
@@ -49,11 +45,7 @@ export default function ProductsList() {
 
   const updateMutation = useMutation({
     mutationFn: (data) => {
-      // Handle FormData for file uploads
-      const config = data instanceof FormData ? {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      } : {};
-      return api.post('/products/update.php', data, config);
+      return updateProduct(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
@@ -68,7 +60,7 @@ export default function ProductsList() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => api.post('/products/delete.php', { id }),
+    mutationFn: (id) => deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['products']);
       toast.success('Product deleted successfully');

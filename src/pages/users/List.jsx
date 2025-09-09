@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/axios';
+import { getUsers, createUser, updateUser, deleteUser } from '@/lib/userApi';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import UserForm from '@/components/users/UserForm';
@@ -21,24 +21,22 @@ export default function UsersList() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['users', page, search, role, isActive],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const params = {
         page: page.toString(),
         limit: '20'
-      });
-      if (search) params.append('q', search);
-      if (role) params.append('role', role);
-      if (isActive !== '') params.append('is_active', isActive);
+      };
+      if (search) params.q = search;
+      if (role) params.role = role;
+      if (isActive !== '') params.is_active = isActive;
       
-      const response = await api.get(`/users/get.php?${params}`);
-      return response.data;
+      return await getUsers(params);
     },
   });
 
   // Create user mutation
   const createMutation = useMutation({
     mutationFn: async (userData) => {
-      const response = await api.post('/users/create.php', userData);
-      return response.data;
+      return await createUser(userData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -54,8 +52,7 @@ export default function UsersList() {
   // Update user mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, ...userData }) => {
-      const response = await api.post(`/users/update.php?id=${id}`, userData);
-      return response.data;
+      return await updateUser(id, userData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -71,8 +68,7 @@ export default function UsersList() {
   // Delete/Restore user mutation
   const deleteMutation = useMutation({
     mutationFn: async ({ id, restore = false }) => {
-      const response = await api.post(`/users/delete.php?id=${id}`, { restore: restore ? 1 : 0 });
-      return response.data;
+      return await deleteUser(id, restore);
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

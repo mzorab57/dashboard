@@ -89,8 +89,19 @@ export default function DashboardHome() {
               >
                 <div className="flex gap-4">
                   <div className="relative">
-                    <div className="size-16 shrink-0 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner">
-                      <span className="text-2xl">📦</span>
+                    <div className="size-16 shrink-0 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner overflow-hidden">
+                      {p.primary_image_url ? (
+                        <img 
+                            src={p.primary_image_url.startsWith('http') ? p.primary_image_url : `http://localhost/api${p.primary_image_url}`} 
+                          alt={p.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <span className={`text-2xl ${p.primary_image_url ? 'hidden' : 'block'}`}>📦</span>
                     </div>
                     <div className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-white"></div>
                   </div>

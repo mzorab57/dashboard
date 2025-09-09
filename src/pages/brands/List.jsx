@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/axios';
+import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/brandApi';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import BrandForm from '@/components/brands/BrandForm';
@@ -30,7 +30,7 @@ export default function BrandsList() {
       if (debouncedSearch) params.q = debouncedSearch;
       if (selectedStatus) params.is_active = selectedStatus;
       
-      return (await api.get('/brands/get.php', { params })).data;
+      return await getBrands(params);
     }
   });
 
@@ -53,11 +53,7 @@ export default function BrandsList() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (formData) => {
-      return await api.post('/brands/create.php', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      return await createBrand(formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
@@ -73,11 +69,7 @@ export default function BrandsList() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, formData }) => {
-      return await api.post(`/brands/update.php?id=${id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      return await updateBrand(id, formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });
@@ -93,7 +85,7 @@ export default function BrandsList() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      return await api.post(`/brands/delete.php?id=${id}`);
+      return await deleteBrand(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['brands'] });

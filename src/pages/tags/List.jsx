@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import api from '@/lib/axios';
+import { getTags, createTag, updateTag, deleteTag } from '@/lib/tagApi';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import TagForm from '@/components/tags/TagForm';
@@ -28,7 +28,7 @@ export default function TagsList() {
       
       if (debouncedSearch) params.q = debouncedSearch;
       
-      return (await api.get('/tags/get.php', { params })).data;
+      return await getTags(params);
     }
   });
 
@@ -51,7 +51,7 @@ export default function TagsList() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (tagData) => {
-      return await api.post('/tags/create.php', tagData);
+      return await createTag(tagData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -67,7 +67,7 @@ export default function TagsList() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, tagData }) => {
-      return await api.post(`/tags/update.php?id=${id}`, tagData);
+      return await updateTag(id, tagData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -83,7 +83,7 @@ export default function TagsList() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      return await api.post(`/tags/delete.php?id=${id}`);
+      return await deleteTag(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
