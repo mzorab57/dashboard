@@ -3,6 +3,7 @@ import api from './axios';
 // Get all products with optional filters
 export const getProducts = async (params = {}) => {
   const response = await api.get('/products/get.php', { params });
+ 
   return response.data;
 };
 
@@ -38,8 +39,16 @@ export const deleteProduct = async (id) => {
 
 // Search products
 export const searchProducts = async (searchTerm, params = {}) => {
-  const response = await api.get('/products/get.php', {
-    params: { search: searchTerm, ...params }
+  const response = await api.get('/products/search.php', {
+    params: { q: searchTerm, ...params }
+  });
+  return response.data;
+};
+
+// Get product suggestions for autocomplete
+export const getProductSuggestions = async (searchTerm, limit = 5) => {
+  const response = await api.get('/products/search.php', {
+    params: { q: searchTerm, limit }
   });
   return response.data;
 };

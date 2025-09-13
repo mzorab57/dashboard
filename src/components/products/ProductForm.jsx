@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { getBrands, searchBrands } from '@/lib/brandApi';
 import Button from '../ui/Button';
 
 export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
@@ -35,6 +36,9 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
   
   const [selectedCategory, setSelectedCategory] = useState('');
   const [imageFile, setImageFile] = useState(null);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [showBrandDropdown, setShowBrandDropdown] = useState(false);
+  const [selectedBrandId, setSelectedBrandId] = useState('');
 
   // Update form data when initialData changes
   useEffect(() => {
@@ -104,8 +108,21 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
     enabled: !!selectedCategory
   });
   
+  // Fetch brands for dropdown
+  const { data: brandsData } = useQuery({
+    queryKey: ['brands', brandSearch],
+    queryFn: async () => {
+      if (brandSearch.trim() ) {
+        return await searchBrands(brandSearch);
+      }
+      return await getBrands({ limit: 50 });
+    },
+    enabled: showBrandDropdown || brandSearch.length > 0
+  });
+  
   const categories = categoriesData?.data || [];
   const subcategories = subcategoriesData?.data || [];
+  const brands = brandsData?.data?.filter(brand => brand.is_active === 1) || [];
   
   // Set initial category if editing
   useEffect(() => {
@@ -116,6 +133,13 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
       }
     }
   }, [initialData, categories, subcategories]);
+  
+  // Set initial brand search if editing
+  useEffect(() => {
+    if (initialData?.brand) {
+      setBrandSearch(initialData.brand);
+    }
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -153,6 +177,29 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
     const file = e.target.files[0];
     setImageFile(file);
   };
+  
+  const handleBrandSearch = (e) => {
+    const value = e.target.value;
+    setBrandSearch(value);
+    setFormData(prev => ({ ...prev, brand: value }));
+    setShowBrandDropdown(true);
+  };
+  
+  const handleBrandSelect = (brand) => {
+    setBrandSearch(brand.name);
+    setSelectedBrandId(brand.id);
+    setFormData(prev => ({ ...prev, brand: brand.name }));
+    setShowBrandDropdown(false);
+  };
+  
+  const handleBrandFocus = () => {
+    setShowBrandDropdown(true);
+  };
+  
+  const handleBrandBlur = () => {
+    // Delay hiding dropdown to allow click on options
+    setTimeout(() => setShowBrandDropdown(false), 200);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -177,7 +224,8 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Product Name */}
+      {/* Product Name && Model */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
           Product Name *
@@ -193,7 +241,6 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
         />
       </div>
 
-      {/* Model */}
       <div>
         <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
           Model
@@ -206,6 +253,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           onChange={handleChange}
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
+      </div>
       </div>
 
       {/* Category & Subcategory */}
@@ -272,18 +320,55 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
       </div>
 
       {/* Brand */}
-      <div>
+      <div className="relative">
         <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
           Brand
         </label>
         <input
+          autoComplete='off'
           type="text"
           id="brand"
           name="brand"
-          value={formData.brand}
-          onChange={handleChange}
+          value={brandSearch}
+          onChange={handleBrandSearch}
+          onFocus={handleBrandFocus}
+          onBlur={handleBrandBlur}
+          placeholder="Search or type brand name..."
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
+        
+        {/* Brand Dropdown */}
+        {showBrandDropdown && brands.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            {brands
+              .filter(brand => 
+                brand.name.toLowerCase().includes(brandSearch.toLowerCase())
+              )
+              .slice(0, 10)
+              .map(brand => (
+                <div
+                  key={brand.id}
+                  onClick={() => handleBrandSelect(brand)}
+                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 flex items-center justify-between"
+                >
+                  <span>{brand.name}</span>
+                  {brand.is_active ? (
+                    <span className="text-xs text-green-600">Active</span>
+                  ) : (
+                    <span className="text-xs text-gray-400">Inactive</span>
+                  )}
+                </div>
+              ))
+            }
+            {brandSearch && !brands.some(brand => 
+              brand.name.toLowerCase() === brandSearch.toLowerCase()
+            ) && (
+              <div className="px-3 py-2 text-sm text-gray-500 border-t">
+                Press Enter to use "{brandSearch}" as new brand
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Price & Discount Price */}
@@ -340,7 +425,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
         
         <div>
           <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-            Slug <span className="text-xs text-gray-500">(Optional - Auto-generated by backend)</span>
+            Slug <span className="text-xs text-gray-500">(Optional - Auto-generated)</span>
           </label>
           <input
             type="text"
@@ -354,7 +439,8 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
         </div>
       </div>
 
-      {/* Descriptions */}
+      {/* Descriptions  */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-1">
           Short Description
@@ -364,7 +450,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           name="short_description"
           value={formData.short_description}
           onChange={handleChange}
-          rows={2}
+          rows={4}
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
       </div>
@@ -382,8 +468,10 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
       </div>
+      </div>
 
-      {/* Image Upload */}
+      {/* Image Upload & URL */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
           Product Image
@@ -393,15 +481,14 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           id="image"
           accept="image/*"
           onChange={handleImageChange}
-          className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+          className="w-full rounded-md border px-4 py-1 border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
-        <p className="text-xs text-gray-500 mt-1">Max file size: 5MB. Supported formats: JPG, PNG, WEBP, GIF</p>
+        <p className="text-xs text-gray-400 mt-1">Max file size: 5MB. Supported formats: JPG, PNG, WEBP, GIF</p>
       </div>
 
-      {/* Image URL Alternative */}
       <div>
         <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 mb-1">
-          Or Image URL
+          Image URL
         </label>
         <input
           type="url"
@@ -413,9 +500,10 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
         />
       </div>
+      </div>
 
       {/* Meta Fields */}
-      <div>
+      {/* <div>
         <label htmlFor="meta_title" className="block text-sm font-medium text-gray-700 mb-1">
           Meta Title <span className="text-xs text-gray-500">(Optional - Auto-generated)</span>
         </label>
@@ -443,7 +531,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
           placeholder="Auto-generated from product name and type"
         />
-      </div>
+      </div> */}
 
       {/* Checkboxes */}
       <div className="flex items-center space-x-6">

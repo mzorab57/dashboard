@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/productApi';
+import { getProducts, createProduct, updateProduct, deleteProduct, searchProducts } from '@/lib/productApi';
+import { searchBrands } from '@/lib/brandApi';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import ProductForm from '@/components/products/ProductForm';
@@ -10,24 +11,58 @@ export default function ProductsList() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filters, setFilters] = useState({
+    type: '',
+    brand: '',
+    min_price: '',
+    max_price: '',
+    
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [brandSearch, setBrandSearch] = useState('');
+  const [showBrandDropdown, setShowBrandDropdown] = useState(false);
+  const [debouncedBrandSearch, setDebouncedBrandSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const queryClient = useQueryClient();
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['products', page, debouncedSearch.trim()],
+    queryKey: ['products', page, debouncedSearch.trim(), filters],
     queryFn: async () => {
       const params = { page, limit: 10 };
-      if (debouncedSearch && debouncedSearch.trim()) {
-        params.search = debouncedSearch.trim();
+      
+      // Use search API if there's a search query or filters
+      if (debouncedSearch.trim() || filters.type || filters.brand || filters.min_price || filters.max_price) {
+        const searchParams = { ...params };
+        
+        if (debouncedSearch.trim()) {
+          searchParams.q = debouncedSearch.trim();
+        } else {
+          // If no search query but filters exist, use a wildcard search
+          searchParams.q = '*';
+        }
+        
+        // Add filters
+        if (filters.type) searchParams.type = filters.type;
+        if (filters.brand) searchParams.brand = filters.brand;
+        if (filters.min_price) searchParams.min_price = filters.min_price;
+        if (filters.max_price) searchParams.max_price = filters.max_price;
+      
+        // Use search endpoint
+        const response = await searchProducts(searchParams.q, searchParams);
+        if (!response || !response.data) throw new Error('Search failed');
+        return response;
       }
+      
+      // Use regular products API for no search/filters
       return await getProducts(params);
     },
     enabled: true,
     refetchOnWindowFocus: false
   });
 
+  // Create product mutation
   const createMutation = useMutation({
     mutationFn: (data) => {
       return createProduct(data);
@@ -72,6 +107,7 @@ export default function ProductsList() {
     }
   });
 
+  // Handle form submission
   const handleSubmit = (formData) => {
     if (!formData) {
       setIsModalOpen(false);
@@ -102,12 +138,6 @@ export default function ProductsList() {
     setIsDeleteModalOpen(true);
   };
 
-  console.log("data");
-  console.log(data);
-  
-  const products = data?.data || [];
-  const totalPages = data?.pagination?.total_pages || 1;
-
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
@@ -118,6 +148,76 @@ export default function ProductsList() {
     setSearch(value);
     setPage(1);
   };
+  
+  const handleFilterChange = (filterName, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+    setPage(1);
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      type: '',
+      brand: '',
+      min_price: '',
+      max_price: ''
+    });
+    setSearch('');
+    setBrandSearch('');
+    setShowBrandDropdown(false);
+    setPage(1);
+  };
+
+  const handleBrandSelect = (brand) => {
+    handleFilterChange('brand', brand.name);
+    setBrandSearch(brand.name);
+    setShowBrandDropdown(false);
+  };
+
+  const handleBrandInputChange = (e) => {
+    const value = e.target.value;
+    setBrandSearch(value);
+    handleFilterChange('brand', value);
+    setShowBrandDropdown(value.length > 0);
+  };
+  
+  const hasActiveFilters = filters.type || filters.brand || filters.min_price || filters.max_price || search;
+
+  // Brand search query
+  const { data: brandSuggestions = [] } = useQuery({
+    queryKey: ['brands', debouncedBrandSearch],
+    queryFn: () => searchBrands(debouncedBrandSearch),
+    enabled: debouncedBrandSearch.length > 0,
+    select: (data) => data?.data.filter(brand => brand.is_active === 1) || []
+  });
+
+  // Debounce brand search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedBrandSearch(brandSearch);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [brandSearch]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.brand-filter-container')) {
+        setShowBrandDropdown(false);
+      }
+    };
+    
+    if (showBrandDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showBrandDropdown]);
+
+  // Pagination
+  const products = data?.data || [];
+  const totalPages = data?.pagination?.pages || 1;
 
   // Debounce search input
   useEffect(() => {
@@ -133,29 +233,151 @@ export default function ProductsList() {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border bg-white p-4 shadow-sm">
-        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h2 className="text-lg font-semibold">Products</h2>
-          <div className="flex gap-2">
-            <form onSubmit={handleSearch} className="flex">
-              <input 
-                name="search"
-                type="text" 
-                value={search}
-                onChange={handleSearchInputChange}
-                placeholder="Search products..." 
-                className="rounded-l-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400"
-              />
-              <button 
-                type="submit"
-                className="rounded-r-md bg-gray-200 px-3 py-2 text-gray-700 hover:bg-gray-300"
+        <div className="mb-4 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-lg font-semibold">Products</h2>
+            <div className="flex gap-2">
+              <form onSubmit={handleSearch} className="flex">
+                <input 
+                  name="search"
+                  type="text" 
+                  value={search}
+                  onChange={handleSearchInputChange}
+                  placeholder="Search products..." 
+                  className="rounded-l-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400"
+                />
+                <button 
+                  type="submit"
+                  className="rounded-r-md bg-gray-200 px-3 py-2 text-gray-700 hover:bg-gray-300"
+                >
+                  🔍
+                </button>
+              </form>
+              <Button 
+                variant="secondary" 
+                onClick={() => setShowFilters(!showFilters)}
+                className={hasActiveFilters ? 'bg-blue-100 text-blue-700' : ''}
               >
-                🔍
-              </button>
-            </form>
-            <Button onClick={() => setIsModalOpen(true)}>
-              Add Product
-            </Button>
+                 Filters {hasActiveFilters && '●'}
+              </Button>
+              <Button onClick={() => setIsModalOpen(true)}>
+                Add Product
+              </Button>
+            </div>
           </div>
+          
+          {/* Filters Panel */}
+          {showFilters && (
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={filters.type}
+                    onChange={(e) => handleFilterChange('type', e.target.value)}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  >
+                    <option value="">All Types</option>
+                    <option value="videography">Videography</option>
+                    <option value="photography">Photography</option>
+                    <option value="both">Both</option>
+                  </select>
+                </div>
+                
+                <div className="relative brand-filter-container">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <input
+                    type="text"
+                    value={brandSearch || filters.brand}
+                    onChange={handleBrandInputChange}
+                    onFocus={() => setShowBrandDropdown(brandSearch.length > 0)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setShowBrandDropdown(false);
+                      }
+                    }}
+                    placeholder="Search brands..."
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  />
+                  
+                  {/* Brand Dropdown */}
+                  {showBrandDropdown && brandSuggestions.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                      {brandSuggestions.slice(0, 10).map((brand) => (
+                        <div
+                          key={brand.id}
+                          onClick={() => handleBrandSelect(brand)}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
+                        >
+                          <div>
+                            <div className="font-medium text-sm">{brand.name}</div>
+                            {brand.description && (
+                              <div className="text-xs text-gray-500 truncate">{brand.description}</div>
+                            )}
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            brand.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {brand.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Clear brand filter */}
+                  {filters.brand && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleFilterChange('brand', '');
+                        setBrandSearch('');
+                        setShowBrandDropdown(false);
+                      }}
+                      className="absolute right-2 top-8 text-gray-400 hover:text-gray-600"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+                  <input
+                    type="number"
+                    value={filters.min_price}
+                    onChange={(e) => handleFilterChange('min_price', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Price</label>
+                  <input
+                    type="number"
+                    value={filters.max_price}
+                    onChange={(e) => handleFilterChange('max_price', e.target.value)}
+                    placeholder="No limit"
+                    min="0"
+                    step="0.01"
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 flex justify-end gap-2">
+                <Button variant="secondary" size="sm" onClick={clearFilters}>
+                  Clear All
+                </Button>
+                <Button size="sm" onClick={() => setShowFilters(false)}>
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -167,6 +389,9 @@ export default function ProductsList() {
         ) : error ? (
           <div className="rounded-md bg-red-50 p-3 text-red-700">
             Failed to load products. Please try again.
+            <div className="text-xs mt-1 text-red-600">
+              {error?.response?.data?.error || error?.message || 'Unknown error'}
+            </div>
           </div>
         ) : products.length === 0 ? (
           <div className="py-8 text-center text-gray-500">
@@ -231,7 +456,7 @@ export default function ProductsList() {
                     <td className="py-3 px-2 text-sm">
                       <div className="font-medium">${product.price}</div>
                       {product.discount_price && (
-                        <div className="text-xs text-red-600 line-through">${product.discount_price}</div>
+                        <div className="text-xs text-red-600 line-through">%{product.discount_price}</div>
                       )}
                     </td>
                     <td className="py-3 px-2">

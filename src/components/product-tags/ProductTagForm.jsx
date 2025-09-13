@@ -166,7 +166,7 @@ export default function ProductTagForm({
         <Button
           type="submit"
           disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          
         >
           {isLoading ? (
             <>

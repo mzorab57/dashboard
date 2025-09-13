@@ -196,7 +196,7 @@ export default function ProductTagsList() {
         <h1 className="text-2xl font-bold text-gray-900">Product Tags</h1>
         <Button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          
         >
           <PlusIcon className="h-5 w-5 mr-2" />
           Add Product Tag

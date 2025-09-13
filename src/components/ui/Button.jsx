@@ -2,8 +2,8 @@ import { clsx } from 'clsx';
 
 const variantStyles = {
   primary: 'bg-gray-900 text-white hover:bg-black focus:ring-gray-900/20',
-  secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50 focus:ring-gray-900/20',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-600/20',
+  secondary: 'bg-white text-gray-900 border border-gray-200 hover:bg-blue-100 focus:ring-gray-900/20',
+  danger: 'border border-gray-200 text-white hover:bg-red-100 focus:ring-red-600/20',
 };
 
 const sizeStyles = {
