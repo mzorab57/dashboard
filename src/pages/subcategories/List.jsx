@@ -48,7 +48,17 @@ export default function SubcategoriesList() {
     }
   });
 
-  const subcategories = subcategoriesData?.data || [];
+  const allSubcategories = subcategoriesData?.data || [];
+  
+  // Client-side filtering for subcategory name or slug
+  const [subcategorySearch, setSubcategorySearch] = useState('');
+  
+  const filteredSubcategories = allSubcategories.filter(subcategory => 
+    subcategory.name.toLowerCase().includes(subcategorySearch.toLowerCase()) || 
+    (subcategory.slug && subcategory.slug.toLowerCase().includes(subcategorySearch.toLowerCase())) 
+  );
+  
+  const subcategories = filteredSubcategories;
 
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
@@ -161,25 +171,26 @@ export default function SubcategoriesList() {
       <div className="rounded-lg border bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold">Subcategories</h2>
-          <Button
-            onClick={openCreateModal}
-            className="flex items-center gap-2"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add Subcategory
-          </Button>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              value={subcategorySearch}
+              onChange={(e) => setSubcategorySearch(e.target.value)}
+              placeholder="Filter by name or slug..." 
+              className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400 min-w-[250px]"
+            />
+            <Button
+              onClick={openCreateModal}
+              className="flex items-center gap-2"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Add Subcategory
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap gap-3">
-          <input
-            type="text"
-            placeholder="Search subcategories..."
-            value={searchTerm}
-            onChange={handleSearchInputChange}
-            className="flex-1 min-w-[200px] rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
-          />
-          
           <select
             value={selectedCategory}
             onChange={handleCategoryChange}
@@ -291,18 +302,20 @@ export default function SubcategoriesList() {
                     </td>
                     <td className="py-3 pl-2">
                       <div className="flex gap-1">
-                        <button 
+                        <Button
                           onClick={() => openEditModal(subcategory)}
-                          className="rounded p-1 text-blue-600 hover:bg-blue-50"
+                          variant="secondary"
+                          size="sm"
                         >
-                          <PencilIcon className="h-4 w-4" />
-                        </button>
-                        <button 
+                          ✏️
+                        </Button>
+                        <Button 
                           onClick={() => handleDelete(subcategory)}
-                          className="rounded p-1 text-red-600 hover:bg-red-50"
+                          variant="danger"
+                          size="sm"
                         >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                          🗑️
+                        </Button>
                       </div>
                     </td>
                   </tr>

@@ -29,8 +29,18 @@ export default function CategoriesList() {
     refetchOnWindowFocus: false
   });
 
-  const categories = data?.data || [];
+  const allCategories = data?.data || [];
   const totalPages = data?.pagination?.pages || 1;
+  
+  // Client-side filtering for category name
+  const [categorySearch, setCategorySearch] = useState('');
+  
+  const filteredCategories = allCategories.filter(category => 
+    category.name.toLowerCase().includes(categorySearch.toLowerCase()) || 
+    (category.slug && category.slug.toLowerCase().includes(categorySearch.toLowerCase())) 
+  );
+  
+  const categories = filteredCategories;
 
   const createMutation = useMutation({
     mutationFn: async (formData) => {
@@ -116,21 +126,19 @@ export default function CategoriesList() {
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold">Categories</h2>
           <div className="flex gap-2">
-            <div className="flex">
-              <input 
-                type="text" 
-                value={search}
-                onChange={handleSearchInputChange}
-                placeholder="Search categories..." 
-                className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400"
-              />
-            </div>
-            <button 
+            <input 
+              type="text" 
+              value={categorySearch}
+              onChange={(e) => setCategorySearch(e.target.value)}
+              placeholder="Filter by name or slug..." 
+              className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400 min-w-[250px]"
+            />
+            <Button 
                onClick={() => setIsModalOpen(true)}
                className="rounded-md bg-gray-900 px-3 py-2 text-white hover:bg-black"
              >
                Add Category
-             </button>
+             </Button>
           </div>
         </div>
 

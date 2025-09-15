@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getProducts, createProduct, updateProduct, deleteProduct, searchProducts } from '@/lib/productApi';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/productApi';
 import { searchBrands } from '@/lib/brandApi';
+
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import ProductForm from '@/components/products/ProductForm';
@@ -16,7 +17,8 @@ export default function ProductsList() {
     brand: '',
     min_price: '',
     max_price: '',
-    
+    is_active: '',
+    is_featured: ''
   });
   const [showFilters, setShowFilters] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
@@ -32,30 +34,21 @@ export default function ProductsList() {
     queryFn: async () => {
       const params = { page, limit: 10 };
       
-      // Use search API if there's a search query or filters
-      if (debouncedSearch.trim() || filters.type || filters.brand || filters.min_price || filters.max_price) {
-        const searchParams = { ...params };
-        
-        if (debouncedSearch.trim()) {
-          searchParams.q = debouncedSearch.trim();
-        } else {
-          // If no search query but filters exist, use a wildcard search
-          searchParams.q = '*';
-        }
-        
-        // Add filters
-        if (filters.type) searchParams.type = filters.type;
-        if (filters.brand) searchParams.brand = filters.brand;
-        if (filters.min_price) searchParams.min_price = filters.min_price;
-        if (filters.max_price) searchParams.max_price = filters.max_price;
-      
-        // Use search endpoint
-        const response = await searchProducts(searchParams.q, searchParams);
-        if (!response || !response.data) throw new Error('Search failed');
-        return response;
+      // Add search query if provided
+      if (debouncedSearch.trim()) {
+        params.q = debouncedSearch.trim();
       }
       
-      // Use regular products API for no search/filters
+      // Add filters
+      if (filters.type) params.type = filters.type;
+      if (filters.brand) params.brand = filters.brand;
+      if (filters.min_price) params.min_price = filters.min_price;
+      if (filters.max_price) params.max_price = filters.max_price;
+  
+      if (filters.is_active !== '') params.is_active = filters.is_active;
+      if (filters.is_featured !== '') params.is_featured = filters.is_featured;
+      
+      // Use unified products API
       return await getProducts(params);
     },
     enabled: true,
@@ -162,7 +155,10 @@ export default function ProductsList() {
       type: '',
       brand: '',
       min_price: '',
-      max_price: ''
+      max_price: '',
+   
+      is_active: '',
+      is_featured: ''
     });
     setSearch('');
     setBrandSearch('');
@@ -183,7 +179,7 @@ export default function ProductsList() {
     setShowBrandDropdown(value.length > 0);
   };
   
-  const hasActiveFilters = filters.type || filters.brand || filters.min_price || filters.max_price || search;
+  const hasActiveFilters = filters.type || filters.brand || filters.min_price || filters.max_price || filters.is_active !== '' || filters.is_featured !== '' || search;
 
   // Brand search query
   const { data: brandSuggestions = [] } = useQuery({
@@ -216,8 +212,19 @@ export default function ProductsList() {
   }, [showBrandDropdown]);
 
   // Pagination
-  const products = data?.data || [];
+  const allProducts = data?.data || [];
   const totalPages = data?.pagination?.pages || 1;
+  
+  // Client-side filtering for name, model, and SKU
+  const [productSearch, setProductSearch] = useState('');
+  
+  const filteredProducts = allProducts.filter(product => 
+    product.name.toLowerCase().includes(productSearch.toLowerCase()) || 
+    (product.model && product.model.toLowerCase().includes(productSearch.toLowerCase())) || 
+    (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase())) 
+  );
+  
+  const products = filteredProducts;
 
   // Debounce search input
   useEffect(() => {
@@ -237,22 +244,14 @@ export default function ProductsList() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-lg font-semibold">Products</h2>
             <div className="flex gap-2">
-              <form onSubmit={handleSearch} className="flex">
-                <input 
-                  name="search"
-                  type="text" 
-                  value={search}
-                  onChange={handleSearchInputChange}
-                  placeholder="Search products..." 
-                  className="rounded-l-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400"
-                />
-                <button 
-                  type="submit"
-                  className="rounded-r-md bg-gray-200 px-3 py-2 text-gray-700 hover:bg-gray-300"
-                >
-                  🔍
-                </button>
-              </form>
+              
+              <input 
+                type="text" 
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Filter by name, model, or SKU..." 
+                className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400 min-w-[250px]"
+              />
               <Button 
                 variant="secondary" 
                 onClick={() => setShowFilters(!showFilters)}
@@ -260,7 +259,7 @@ export default function ProductsList() {
               >
                  Filters {hasActiveFilters && '●'}
               </Button>
-              <Button onClick={() => setIsModalOpen(true)}>
+              <Button onClick={() => setIsModalOpen(true)} >
                 Add Product
               </Button>
             </div>
@@ -269,7 +268,7 @@ export default function ProductsList() {
           {/* Filters Panel */}
           {showFilters && (
             <div className="bg-gray-50 p-4 rounded-lg border">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3  gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
                   <select
@@ -366,6 +365,34 @@ export default function ProductsList() {
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
                   />
                 </div>
+                
+             
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={filters.is_active}
+                    onChange={(e) => handleFilterChange('is_active', e.target.value)}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  >
+                    <option value="">All Status</option>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Featured</label>
+                  <select
+                    value={filters.is_featured}
+                    onChange={(e) => handleFilterChange('is_featured', e.target.value)}
+                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm"
+                  >
+                    <option value="">All Products</option>
+                    <option value="1">Featured Only</option>
+                    <option value="0">Non-Featured</option>
+                  </select>
+                </div>
               </div>
               
               <div className="mt-4 flex justify-end gap-2">
@@ -405,6 +432,7 @@ export default function ProductsList() {
                   <th className="pb-2 pr-2">ID</th>
                   <th className="pb-2 px-2">Image</th>
                   <th className="pb-2 px-2">Name</th>
+                  <th className="pb-2 px-2">Subcategory</th>
                   <th className="pb-2 px-2">Type</th>
                   <th className="pb-2 px-2">Brand</th>
                   <th className="pb-2 px-2">Price</th>
@@ -442,6 +470,12 @@ export default function ProductsList() {
                         {!product.model && !product.sku && <span>No model/SKU</span>}
                       </div>
                     </td>
+                    <td className="py-3 px-2">
+                      <div className="text-sm">{product.subcategory_name || '-'}</div>
+                      {product.category_name && (
+                        <div className="text-xs text-gray-500">({product.category_name})</div>
+                      )}
+                    </td>
                     <td className="py-3 px-2 text-sm">
                       <span className={`inline-block rounded px-2 py-1 text-xs ${
                         product.type === 'videography' ? 'bg-blue-100 text-blue-800' :
@@ -453,6 +487,7 @@ export default function ProductsList() {
                       </span>
                     </td>
                     <td className="py-3 px-2 text-sm">{product.brand || '-'}</td>
+                  
                     <td className="py-3 px-2 text-sm">
                       <div className="font-medium">${product.price}</div>
                       {product.discount_price && (

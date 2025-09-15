@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { getTags, createTag, updateTag, deleteTag } from '@/lib/tagApi';
@@ -9,8 +9,6 @@ import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default function TagsList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTag, setEditingTag] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -19,34 +17,32 @@ export default function TagsList() {
   const queryClient = useQueryClient();
   
   const { data: tagsData, isLoading, error } = useQuery({
-    queryKey: ['tags', currentPage, debouncedSearch],
+    queryKey: ['tags', currentPage],
     queryFn: async () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
       };
       
-      if (debouncedSearch) params.q = debouncedSearch;
-      
       return await getTags(params);
     }
   });
 
-  const tags = tagsData?.data || [];
+  const allTags = tagsData?.data || [];
+  
+  // Client-side filtering for tag name or slug
+  const [tagSearch, setTagSearch] = useState('');
+  
+  const filteredTags = allTags.filter(tag => 
+    tag.name.toLowerCase().includes(tagSearch.toLowerCase()) || 
+    (tag.slug && tag.slug.toLowerCase().includes(tagSearch.toLowerCase())) 
+  );
+  
+  const tags = filteredTags;
 
   const handleSearchInputChange = (e) => {
-    setSearchTerm(e.target.value);
+    setTagSearch(e.target.value);
   };
-
-  // Debounce search effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setCurrentPage(1);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // Create mutation
   const createMutation = useMutation({
@@ -141,15 +137,13 @@ export default function TagsList() {
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold">Tags</h2>
           <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchInputChange}
-                placeholder="Search tags..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2  focus:border-transparent"
-              />
-            </div>
+            <input 
+              type="text" 
+              value={tagSearch}
+              onChange={handleSearchInputChange}
+              placeholder="Filter by name or slug..." 
+              className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400 min-w-[250px]"
+            />
             <Button
               onClick={openCreateModal}
               className=" text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -199,19 +193,19 @@ export default function TagsList() {
                       <div className="flex gap-1">
                         <Button
                           onClick={() => openEditModal(tag)}
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
-                          className="text-blue-600 hover:text-blue-900"
+                          
                         >
-                          <PencilIcon className="h-4 w-4" />
+                          ✏️
                         </Button>
                         <Button
                           onClick={() => handleDelete(tag)}
-                          variant="outline"
+                          variant="danger"
                           size="sm"
-                          className="text-red-600 hover:text-red-900"
+                          
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          🗑️
                         </Button>
                       </div>
                     </td>

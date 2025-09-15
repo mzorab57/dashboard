@@ -91,20 +91,6 @@ export const getProductTagsByTagId = async (tagId) => {
   }
 };
 
-// Search product tags
-export const searchProductTags = async (query, options = {}) => {
-  try {
-    const params = {
-      q: query,
-      ...options
-    };
-    const response = await api.get('/product_tags/get.php', { params });
-    return response.data;
-  } catch (error) {
-    throw new Error(error.response?.data?.error || 'Failed to search product tags');
-  }
-};
-
 // Bulk create product tags
 export const bulkCreateProductTags = async (productTagsData) => {
   try {

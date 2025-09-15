@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import { getBrands, createBrand, updateBrand, deleteBrand } from '@/lib/brandApi';
@@ -9,8 +9,6 @@ import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 export default function BrandsList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
@@ -20,35 +18,34 @@ export default function BrandsList() {
   const queryClient = useQueryClient();
   
   const { data: brandsData, isLoading, error } = useQuery({
-    queryKey: ['brands', currentPage, debouncedSearch, selectedStatus],
+    queryKey: ['brands', currentPage, selectedStatus],
     queryFn: async () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
       };
       
-      if (debouncedSearch) params.q = debouncedSearch;
       if (selectedStatus) params.is_active = selectedStatus;
       
       return await getBrands(params);
     }
   });
 
-  const brands = brandsData?.data || [];
+  const allBrands = brandsData?.data || [];
+  
+  // Client-side filtering for brand name or slug
+  const [brandSearch, setBrandSearch] = useState('');
+  
+  const filteredBrands = allBrands.filter(brand => 
+    brand.name.toLowerCase().includes(brandSearch.toLowerCase()) || 
+    (brand.slug && brand.slug.toLowerCase().includes(brandSearch.toLowerCase())) 
+  );
+  
+  const brands = filteredBrands;
 
   const handleSearchInputChange = (e) => {
-    setSearchTerm(e.target.value);
+    setBrandSearch(e.target.value);
   };
-
-  // Debounce search effect
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      setCurrentPage(1);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   // Create mutation
   const createMutation = useMutation({
@@ -143,15 +140,13 @@ export default function BrandsList() {
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold">Brands</h2>
           <div className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={handleSearchInputChange}
-                placeholder="Search brands..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:black focus:border-transparent"
-              />
-            </div>
+            <input 
+              type="text" 
+              value={brandSearch}
+              onChange={handleSearchInputChange}
+              placeholder="Filter by name or slug..." 
+              className="rounded-md border px-3 py-2 outline-none focus:ring-1 focus:ring-gray-400 min-w-[250px]"
+            />
            
             <Button
               onClick={openCreateModal}
@@ -222,19 +217,19 @@ export default function BrandsList() {
                       <div className="flex gap-1">
                         <Button
                           onClick={() => openEditModal(brand)}
-                          variant="outline"
+                          variant="secondary"
                           size="sm"
-                          className="text-blue-600 hover:text-blue-900"
+                          
                         >
-                          <PencilIcon className="h-4 w-4" />
+                          ✏️
                         </Button>
                         <Button
                           onClick={() => handleDelete(brand)}
-                          variant="outline"
+                          variant="danger"
                           size="sm"
-                          className="text-red-600 hover:text-red-900"
+                          
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          🗑️
                         </Button>
                       </div>
                     </td>

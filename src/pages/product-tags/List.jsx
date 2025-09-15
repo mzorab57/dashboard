@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
-import { getProductTags, getAllProductTags, createProductTag, updateProductTag, deleteProductTag, getProductTagsWithDetails } from '@/lib/productTagApi';
+import {  getAllProductTags, createProductTag, updateProductTag, deleteProductTag, getProductTagsWithDetails } from '@/lib/productTagApi';
 import { getProducts } from '@/lib/productApi';
 import { getTags } from '@/lib/tagApi';
 import Button from '@/components/ui/Button';
@@ -11,8 +11,8 @@ import { PencilIcon, TrashIcon, PlusIcon, EyeIcon } from '@heroicons/react/24/ou
 
 export default function ProductTagsList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [productTagSearch, setProductTagSearch] = useState('');
+  const [allProductTags, setAllProductTags] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,40 +23,47 @@ export default function ProductTagsList() {
   const itemsPerPage = 10;
   const queryClient = useQueryClient();
   
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-    }, 500);
+  // Client-side filtering
+  const filteredProductTags = allProductTags.filter(productTag => {
+    const matchesSearch = !productTagSearch || 
+      (productTag.product_name && productTag.product_name.toLowerCase().includes(productTagSearch.toLowerCase())) ||
+      (productTag.tag_name && productTag.tag_name.toLowerCase().includes(productTagSearch.toLowerCase())) ||
+      (productTag.tag_slug && productTag.tag_slug.toLowerCase().includes(productTagSearch.toLowerCase()));
+    
+    const matchesProduct = !selectedProduct || productTag.product_id == selectedProduct;
+    const matchesTag = !selectedTag || productTag.tag_id == selectedTag;
+    
+    return matchesSearch && matchesProduct && matchesTag;
+  });
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
+  // Pagination for filtered results
+  const totalFilteredItems = filteredProductTags.length;
+  const totalPages = Math.ceil(totalFilteredItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const productTags = filteredProductTags.slice(startIndex, endIndex);
 
-  // Fetch product tags
+  // Fetch all product tags for client-side filtering
   const { data: productTagsData, isLoading, error } = useQuery({
-    queryKey: ['product-tags', currentPage, debouncedSearch, selectedProduct, selectedTag, showDetails],
+    queryKey: ['product-tags', showDetails],
     queryFn: async () => {
-      const params = {
-        page: currentPage,
-        limit: itemsPerPage,
-      };
-      
-      if (debouncedSearch) params.q = debouncedSearch;
-      if (selectedProduct) params.product_id = selectedProduct;
-      if (selectedTag) params.tag_id = selectedTag;
-      
-      // If no filters are applied, use getAllProductTags
-      if (!selectedProduct && !selectedTag && !debouncedSearch) {
-        return await getAllProductTags(params);
-      }
-      
       if (showDetails) {
-        return await getProductTagsWithDetails(params);
+        return await getProductTagsWithDetails({ limit: 1000 });
       } else {
-        return await getProductTags(params);
+        return await getAllProductTags({ limit: 1000 });
       }
+    },
+    onSuccess: (data) => {
+      setAllProductTags(data?.data || []);
     }
   });
+
+  // Update allProductTags when data changes
+  useEffect(() => {
+    if (productTagsData?.data) {
+      setAllProductTags(productTagsData.data);
+    }
+  }, [productTagsData]);
 
   // Fetch products for filter dropdown
   const { data: productsData } = useQuery({
@@ -74,13 +81,11 @@ export default function ProductTagsList() {
     }
   });
 
-  const productTags = productTagsData?.data || [];
-  const totalPages = Math.ceil((productTagsData?.total || 0) / itemsPerPage);
   const products = productsData?.data || [];
   const tags = tagsData?.data || [];
 
   const handleSearchInputChange = (e) => {
-    setSearchTerm(e.target.value);
+    setProductTagSearch(e.target.value);
     setCurrentPage(1);
   };
 
@@ -160,19 +165,14 @@ export default function ProductTagsList() {
     setCurrentPage(page);
   };
 
-  const handleProductFilterChange = (e) => {
-    setSelectedProduct(e.target.value);
-    setCurrentPage(1);
-  };
+
 
   const handleTagFilterChange = (e) => {
     setSelectedTag(e.target.value);
     setCurrentPage(1);
   };
 
-  const toggleDetails = () => {
-    setShowDetails(!showDetails);
-  };
+
 
   if (isLoading) {
     return (
@@ -205,46 +205,30 @@ export default function ProductTagsList() {
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg shadow space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className='col-span-2'>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
             <input
               type="text"
-              value={searchTerm}
+              value={productTagSearch}
               onChange={handleSearchInputChange}
-              placeholder="Search product tags..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Filter by product name, tag name or slug..."
+              className="w-full  px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product
-            </label>
-            <select
-              value={selectedProduct}
-              onChange={handleProductFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Products</option>
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        
 
-          <div>
+          <div className='col-span-1'>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Tag
             </label>
             <select
               value={selectedTag}
               onChange={handleTagFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2  border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Tags</option>
               {tags.map((tag) => (
@@ -255,16 +239,7 @@ export default function ProductTagsList() {
             </select>
           </div>
 
-          <div className="flex items-end">
-            <Button
-              onClick={toggleDetails}
-              variant={showDetails ? 'primary' : 'secondary'}
-              className="w-full"
-            >
-              <EyeIcon className="h-5 w-5 mr-2" />
-              {showDetails ? 'Hide Details' : 'Show Details'}
-            </Button>
-          </div>
+        
         </div>
       </div>
 
@@ -322,31 +297,7 @@ export default function ProductTagsList() {
                     )}
                   </div>
                 </td>
-                {showDetails && (
-                  <>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {productTag.product && (
-                        <div>
-                          <p className="font-medium">{productTag.product.name}</p>
-                          <p className="text-gray-500">{productTag.product.description?.substring(0, 50)}...</p>
-                          <p className="text-sm text-gray-400">Price: ${productTag.product.price}</p>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {productTag.tag && (
-                        <div>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {productTag.tag.name}
-                          </span>
-                          {productTag.tag.description && (
-                            <p className="text-gray-500 mt-1">{productTag.tag.description}</p>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  </>
-                )}
+               
                
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                   <Button
@@ -354,14 +305,14 @@ export default function ProductTagsList() {
                     size="sm"
                     variant="secondary"
                   >
-                    <PencilIcon className="h-4 w-4" />
+                   ✏️
                   </Button>
                   <Button
                     onClick={() => handleDelete(productTag)}
                     size="sm"
                     variant="danger"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    🗑️
                   </Button>
                 </td>
               </tr>

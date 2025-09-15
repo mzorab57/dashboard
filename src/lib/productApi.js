@@ -39,7 +39,7 @@ export const deleteProduct = async (id) => {
 
 // Search products
 export const searchProducts = async (searchTerm, params = {}) => {
-  const response = await api.get('/products/search.php', {
+  const response = await api.get('/products/get.php', {
     params: { q: searchTerm, ...params }
   });
   return response.data;
@@ -47,7 +47,7 @@ export const searchProducts = async (searchTerm, params = {}) => {
 
 // Get product suggestions for autocomplete
 export const getProductSuggestions = async (searchTerm, limit = 5) => {
-  const response = await api.get('/products/search.php', {
+  const response = await api.get('/products/get.php', {
     params: { q: searchTerm, limit }
   });
   return response.data;

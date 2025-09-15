@@ -11,7 +11,7 @@ export default function ProductTagForm({
 }) {
   const [formData, setFormData] = useState({
     product_id: '',
-    tag_id: '',
+    tag_ids: []
   });
   const [errors, setErrors] = useState({});
 
@@ -19,12 +19,12 @@ export default function ProductTagForm({
     if (productTag) {
       setFormData({
         product_id: productTag.product_id || '',
-        tag_id: productTag.tag_id || '',
+        tag_ids: productTag.tag_id ? [productTag.tag_id] : []
       });
     } else {
       setFormData({
         product_id: '',
-        tag_id: '',
+        tag_ids: []
       });
     }
   }, [productTag]);
@@ -36,8 +36,8 @@ export default function ProductTagForm({
       newErrors.product_id = 'Product is required';
     }
 
-    if (!formData.tag_id) {
-      newErrors.tag_id = 'Tag is required';
+    if (!formData.tag_ids || formData.tag_ids.length === 0) {
+      newErrors.tag_ids = 'At least one tag is required';
     }
 
     // Check if this combination already exists (for create mode)
@@ -60,10 +60,20 @@ export default function ProductTagForm({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'tag_ids') {
+      // Handle multiple tag selection
+      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: selectedOptions
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
     
     // Clear error when user starts typing
     if (errors[name]) {
@@ -106,33 +116,34 @@ export default function ProductTagForm({
 
         {/* Tag Selection */}
         <div>
-          <label htmlFor="tag_id" className="block text-sm font-medium text-gray-700 mb-2">
-            Tag *
+          <label htmlFor="tag_ids" className="block text-sm font-medium text-gray-700 mb-2">
+            Tags *
           </label>
           <select
-            id="tag_id"
-            name="tag_id"
-            value={formData.tag_id}
+            id="tag_ids"
+            name="tag_ids"
+            value={formData.tag_ids}
             onChange={handleChange}
-            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.tag_id ? 'border-red-500' : 'border-gray-300'
+            multiple
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[120px] ${
+              errors.tag_ids ? 'border-red-500' : 'border-gray-300'
             }`}
             disabled={isLoading}
           >
-            <option value="">Select a tag</option>
             {tags.map((tag) => (
               <option key={tag.id} value={tag.id}>
                 {tag.name}
               </option>
             ))}
           </select>
-          {errors.tag_id && (
-            <p className="mt-1 text-sm text-red-600">{errors.tag_id}</p>
+          <p className="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple tags</p>
+          {errors.tag_ids && (
+            <p className="mt-1 text-sm text-red-600">{errors.tag_ids}</p>
           )}
         </div>
 
-        {/* Selected Product and Tag Preview */}
-        {formData.product_id && formData.tag_id && (
+        {/* Selected Product and Tags Preview */}
+        {formData.product_id && formData.tag_ids && formData.tag_ids.length > 0 && (
           <div className="bg-gray-50 p-4 rounded-md">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Preview:</h4>
             <div className="space-y-2">
@@ -143,10 +154,17 @@ export default function ProductTagForm({
                 </span>
               </div>
               <div>
-                <span className="text-sm text-gray-600">Tag: </span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {tags.find(t => t.id == formData.tag_id)?.name || 'Unknown Tag'}
-                </span>
+                <span className="text-sm text-gray-600">Tags: </span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {formData.tag_ids.map(tagId => {
+                    const tag = tags.find(t => t.id == tagId);
+                    return (
+                      <span key={tagId} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {tag?.name || 'Unknown Tag'}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

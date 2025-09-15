@@ -30,7 +30,7 @@ export default function DashboardLayout() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30 text-gray-800">
       {/* Topbar */}
       <header className="sticky top-0 z-40 border-b border-white/20 bg-white/90 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 shadow-lg">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-6">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center gap-3 px-6">
           <button className="md:hidden rounded-xl p-2 hover:bg-gray-100 transition-colors" onClick={() => setOpen(true)} aria-label="Open menu">
             <span className="text-lg">☰</span>
           </button>
@@ -66,7 +66,7 @@ export default function DashboardLayout() {
       </header>
 
       {/* Layout grid */}
-      <div className="mx-auto grid max-w-7xl grid-cols-12 gap-0  ">
+      <div className="mx-auto grid max-w-[1600px] grid-cols-12 gap-0  ">
         {/* Sidebar (desktop) */}
         <aside className="sticky top-16 col-span-12 hidden h-[calc(100vh-64px)] border-r border-white/20 bg-white/80 backdrop-blur-xl md:col-span-3 lg:col-span-2 md:block shadow-xl">
           <nav className="p-4 space-y-2">

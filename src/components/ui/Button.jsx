@@ -22,7 +22,7 @@ export default function Button({
   return (
     <button
       className={clsx(
-        'inline-flex items-center justify-center font-semibold outline-none transition-colors focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
+        'inline-flex items-center whitespace-nowrap justify-center font-semibold outline-none transition-colors focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
         variantStyles[variant],
         sizeStyles[size],
         className
