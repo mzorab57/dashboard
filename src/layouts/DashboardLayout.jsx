@@ -13,6 +13,7 @@ const nav = [
   { to: '/product-images', label: 'Product Images', icon: '🖼️', color: 'from-teal-500 to-teal-600' },
   { to: '/product-specifications', label: 'Product Specifications', icon: '📋', color: 'from-amber-500 to-amber-600' },
   { to: '/product-tags', label: 'Product Tags', icon: '🔖', color: 'from-yellow-500 to-yellow-600' },
+  // { to: '/discounts', label: 'Discounts', icon: '💰', color: 'from-red-500 to-red-600' },
   { to: '/users', label: 'Users', icon: '👥', color: 'from-cyan-500 to-cyan-600' },
 ];
 

@@ -13,6 +13,7 @@ import UsersList from '@/pages/users/List';
 import ProductTagsList from '@/pages/product-tags/List';
 import ProductSpecificationsList from '@/pages/product-specifications/List';
 import ProductImagesList from '@/pages/product-images/List';
+import DiscountsList from '@/pages/discounts/List';
 
 import NotFound from '@/pages/NotFound';
 
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/product-tags" element={<ProductTagsList />} />
           <Route path="/product-specifications" element={<ProductSpecificationsList />} />
           <Route path="/product-images" element={<ProductImagesList />} />
+          {/* <Route path="/discounts" element={<DiscountsList />} /> */}
           {/* دەتوانیت routes زیاتر زیاد بکەیت */}
         </Route>
       </Route>

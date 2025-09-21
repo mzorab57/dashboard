@@ -4,6 +4,7 @@ import api from '@/lib/axios';
 import { getBrands, searchBrands } from '@/lib/brandApi';
 import Button from '../ui/Button';
 
+
 export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
@@ -406,6 +407,8 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           />
         </div>
       </div>
+
+    
 
       {/* SKU & Slug */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
