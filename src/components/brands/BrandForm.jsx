@@ -19,7 +19,7 @@ export default function BrandForm({ brand, onSubmit, onCancel, isLoading }) {
         name: brand?.name || '',
         slug: brand?.slug || '',
         description: brand?.description || '',
-        logo_url: brand?.logo || '',
+        logo_url: brand?.logo_url || '',
         is_active: brand?.is_active ?? true,
       });
     } else {
@@ -43,11 +43,17 @@ export default function BrandForm({ brand, onSubmit, onCancel, isLoading }) {
       ...prev,
       [name]: newValue
     }));
+    if (name === 'logo_url' && value) {
+      setLogoFile(null);
+    }
   };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     setLogoFile(file);
+    if (file) {
+      setFormData(prev => ({ ...prev, logo_url: '' }));
+    }
   };
 
   const handleSubmit = (e) => {

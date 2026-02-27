@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import SubcategoryForm from '@/components/subcategories/SubcategoryForm';
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/api';
 
 export default function SubcategoriesList() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -269,7 +270,7 @@ export default function SubcategoriesList() {
                      <td className="py-3 px-2">
                       {subcategory.image_url ? (
                         <img 
-                          src={subcategory.image_url.startsWith('http') ? subcategory.image_url : `http://localhost/api${subcategory.image_url}`} 
+                          src={subcategory.image_url.startsWith('http') ? subcategory.image_url : `${API_BASE}${subcategory.image_url}`} 
                           alt={subcategory.name}
                           className="size-10 rounded object-cover bg-gray-100"
                           onError={(e) => {

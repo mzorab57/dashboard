@@ -5,7 +5,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isLoading }
   const [formData, setFormData] = useState({
     name: category?.name || '',
     slug: category?.slug || '',
-    image_url: category?.image || '',
+    image_url: category?.image_url || '',
     is_active: category?.is_active ?? true,
   });
 
@@ -17,7 +17,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, isLoading }
       setFormData({
         name: category?.name || '',
         slug: category?.slug || '',
-        image_url: category?.image || '',
+        image_url: category?.image_url || '',
         is_active: category?.is_active ?? true,
       });
     } else {
@@ -40,11 +40,17 @@ export default function CategoryForm({ category, onSubmit, onCancel, isLoading }
       ...prev,
       [name]: newValue
     }));
+    if (name === 'image_url' && value) {
+      setImageFile(null);
+    }
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     setImageFile(file);
+    if (file) {
+      setFormData(prev => ({ ...prev, image_url: '' }));
+    }
   };
 
   const handleSubmit = (e) => {

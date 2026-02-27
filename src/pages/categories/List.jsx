@@ -5,6 +5,7 @@ import { getCategories, createCategory, updateCategory, deleteCategory } from '@
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import CategoryForm from '@/components/categories/CategoryForm';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/api';
 
 export default function CategoriesList() {
   const [page, setPage] = useState(1);
@@ -186,7 +187,7 @@ export default function CategoriesList() {
                     <td className="py-3 px-2">
                       {category.image_url ? (
                         <img 
-                          src={category.image_url.startsWith('http') ? category.image_url : `http://localhost/api${category.image_url}`} 
+                          src={category.image_url.startsWith('http') ? category.image_url : `${API_BASE}${category.image_url}`} 
                           alt={category.name}
                           className="h-10 w-10 rounded-lg object-cover"
                           onError={(e) => {

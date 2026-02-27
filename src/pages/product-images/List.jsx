@@ -370,7 +370,7 @@ export default function ProductImagesList() {
                     <img
                       src={image.image_full_url || image.image_url}
                       alt="Product image"
-                      className="w-full h-full object-cover"
+                      className=""
                       onError={(e) => {
                         e.target.src = '/placeholder-image.png';
                       }}

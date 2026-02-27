@@ -7,9 +7,10 @@ import Modal from '@/components/ui/Modal';
 import BrandForm from '@/components/brands/BrandForm';
 import { PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/api';
+
 export default function BrandsList() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedStatus, setSelectedStatus] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -18,14 +19,12 @@ export default function BrandsList() {
   const queryClient = useQueryClient();
   
   const { data: brandsData, isLoading, error } = useQuery({
-    queryKey: ['brands', currentPage, selectedStatus],
+    queryKey: ['brands', currentPage],
     queryFn: async () => {
       const params = {
         page: currentPage,
         limit: itemsPerPage,
       };
-      
-      if (selectedStatus) params.is_active = selectedStatus;
       
       return await getBrands(params);
     }
@@ -46,6 +45,12 @@ export default function BrandsList() {
   const handleSearchInputChange = (e) => {
     setBrandSearch(e.target.value);
   };
+
+  const total = Number(brandsData?.pagination?.total) || 0;
+  const totalPages = Number(brandsData?.pagination?.total_pages) || (total ? Math.ceil(total / itemsPerPage) : 1);
+  const safePage = Number.isFinite(currentPage) && currentPage > 0 ? currentPage : 1;
+  const startIndex = total ? ((safePage - 1) * itemsPerPage) + 1 : 0;
+  const endIndex = total ? Math.min(safePage * itemsPerPage, total) : 0;
 
   // Create mutation
   const createMutation = useMutation({
@@ -170,7 +175,7 @@ export default function BrandsList() {
           </div>
         ) : brands.length === 0 ? (
           <div className="py-8 text-center text-gray-500">
-            No brands found. {search && 'Try a different search term.'}
+            No brands found. {brandSearch && 'Try a different search term.'}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -194,9 +199,10 @@ export default function BrandsList() {
                     <td className="py-3 px-2">
                       {brand.logo_url ? (
                         <img 
-                            src={brand.logo_url.startsWith('http') ? brand.logo_url : `http://localhost/api${brand.logo_url}`} 
+                          src={brand.logo_url.startsWith('http') ? brand.logo_url : `${API_BASE}${brand.logo_url}`} 
                           alt={`${brand.name} logo`} 
                           className="h-8 w-8 object-contain"
+                          onError={(e) => { e.currentTarget.src = '/placeholder-image.png'; }}
                         />
                       ) : (
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-500">
@@ -244,20 +250,23 @@ export default function BrandsList() {
         {brandsData?.pagination && (
           <div className="mt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, brandsData.pagination.total)} of {brandsData.pagination.total} results
+              Showing {startIndex} to {endIndex} of {total} results
             </div>
             <div className="flex gap-2">
               <Button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => Math.max(1, (Number.isFinite(p) && p > 0 ? p : 1) - 1))}
+                disabled={safePage === 1}
                 variant="outline"
                 size="sm"
               >
                 Previous
               </Button>
               <Button
-                onClick={() => setCurrentPage(Math.min(brandsData.pagination.total_pages, currentPage + 1))}
-                disabled={currentPage === brandsData.pagination.total_pages}
+                onClick={() => setCurrentPage((p) => {
+                  const curr = Number.isFinite(p) && p > 0 ? p : 1;
+                  return Math.min(totalPages, curr + 1);
+                })}
+                disabled={safePage >= totalPages}
                 variant="outline"
                 size="sm"
               >
