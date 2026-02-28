@@ -538,7 +538,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
 
       {/* Checkboxes */}
       <div className="flex items-center space-x-6">
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           <input
             type="checkbox"
             id="is_featured"
@@ -564,7 +564,7 @@ export default function ProductForm({ onSubmit, initialData, isSubmitting }) {
           <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
             Active
           </label>
-        </div>
+        </div> */}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">

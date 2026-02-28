@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '@/lib/productApi';
 import { searchBrands } from '@/lib/brandApi';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/api';
+
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import ProductForm from '@/components/products/ProductForm';
@@ -436,7 +438,7 @@ export default function ProductsList() {
                   <th className="pb-2 px-2">Type</th>
                   <th className="pb-2 px-2">Brand</th>
                   <th className="pb-2 px-2">Price</th>
-                  <th className="pb-2 px-2">Featured</th>
+                  {/* <th className="pb-2 px-2">Featured</th> */}
                   <th className="pb-2 px-2">Status</th>
                   <th className="pb-2 pl-2">Actions</th>
                 </tr>
@@ -448,7 +450,7 @@ export default function ProductsList() {
                     <td className="py-3 px-2">
                       {product.primary_image_url ? (
                         <img 
-                          src={product.primary_image_url.startsWith('http') ? product.primary_image_url : `http://localhost/api${product.primary_image_url}`} 
+                          src={product.primary_image_url.startsWith('http') ? product.primary_image_url : `${API_BASE}${product.primary_image_url}`} 
                           alt={product.name}
                           className="size-10 rounded object-cover bg-gray-100"
                           onError={(e) => {
@@ -494,7 +496,7 @@ export default function ProductsList() {
                         <div className="text-xs text-red-600 line-through">%{product.discount_price}</div>
                       )}
                     </td>
-                    <td className="py-3 px-2">
+                    {/* <td className="py-3 px-2">
                       {product.is_featured ? (
                         <span className="inline-block rounded-full px-2 py-1 text-xs bg-yellow-100 text-yellow-800">
                           ⭐ Featured
@@ -502,7 +504,7 @@ export default function ProductsList() {
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}
-                    </td>
+                    </td> */}
                     <td className="py-3 px-2">
                       <span className={`inline-block rounded-full px-2 py-1 text-xs ${
                         product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
