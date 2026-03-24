@@ -172,7 +172,7 @@ export default function SubcategoriesList() {
       <div className="rounded-lg border bg-white p-4 shadow-sm">
         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="text-lg font-semibold">Subcategories</h2>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input 
               type="text" 
               value={subcategorySearch}

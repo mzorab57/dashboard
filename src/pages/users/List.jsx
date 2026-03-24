@@ -115,7 +115,7 @@ export default function UsersList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
           <p className="text-gray-600">Manage system users and their permissions</p>
@@ -127,7 +127,7 @@ export default function UsersList() {
           }}
           className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700"
         >
-          👥 Add User
+         Add User
         </Button>
       </div>
 

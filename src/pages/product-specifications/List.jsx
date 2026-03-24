@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import {
@@ -24,22 +24,54 @@ export default function ProductSpecificationsList() {
   const [selectedSpecification, setSelectedSpecification] = useState(null);
 
   const queryClient = useQueryClient();
+  const specsRef = useRef(null);
 
-  // Fetch products for dropdown
+  // Fetch ALL products (paged) once; filter locally in dropdown
   const { data: productsData } = useQuery({
-    queryKey: ['products', { limit: 1000 }],
-    queryFn: () => getProducts({ limit: 1000 })
+    queryKey: ['products-all-for-selection'],
+    queryFn: async () => {
+      const perPage = 100;
+      const maxPages = 50;
+      let page = 1;
+      let out = [];
+      for (;;) {
+        const res = await getProducts({ is_active: 'all', page, limit: perPage });
+        const arr = Array.isArray(res) ? res : (res?.data || []);
+        out = out.concat(arr);
+        const p = res?.pagination;
+        if (p && p.pages) {
+          if (page >= p.pages) break;
+          page += 1;
+        } else {
+          if (arr.length < perPage) break;
+          page += 1;
+          if (page > maxPages) break;
+        }
+      }
+      return { data: out };
+    }
   });
 
   const products = productsData?.data || [];
   const selectedProduct = products.find(p => p.id == selectedProductId);
 
-  // Filter products based on search
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (product.model && product.model.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase()))
-  );
+  // Filter products locally (tokenized; match all tokens across fields)
+  const filteredProducts = (() => {
+    const q = (productSearch || '').trim().toLowerCase();
+    if (!q) return products;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return products.filter(p => {
+      const hay = [
+        p.name,
+        p.model,
+        p.brand,
+        p.sku,
+        p.type,
+        p.category_name
+      ].map(s => (s || '').toLowerCase()).join(' ');
+      return tokens.every(t => hay.includes(t));
+    });
+  })();
 
   // Fetch specifications for selected product
   const { data: specificationsData, isLoading } = useQuery({
@@ -113,6 +145,11 @@ export default function ProductSpecificationsList() {
     setSelectedIndex(-1);
     setSearchTerm('');
     setSelectedGroup('');
+    setTimeout(() => {
+      if (specsRef.current) {
+        specsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
   };
 
   const handleProductSearchChange = (e) => {
@@ -193,7 +230,7 @@ export default function ProductSpecificationsList() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Product Specifications</h1>
           <p className="text-gray-600 mt-1">Manage detailed specifications for your products</p>
@@ -249,9 +286,13 @@ export default function ProductSpecificationsList() {
                     }`}
                   >
                     <div className="font-medium">{product.name}</div>
-                    <div className={`text-xs ${
-                      index === selectedIndex ? 'text-gray-600' : 'text-gray-500'
-                    }`}>
+                    <div className={`text-xs ${index === selectedIndex ? 'text-gray-600' : 'text-gray-500'}`}>
+                      {product.type && <span>Type: {product.type}</span>}
+                      {(product.type && (product.category_name || product.brand || product.model)) && <span> • </span>}
+                      {product.category_name && <span>Category: {product.category_name}</span>}
+                      {(product.category_name && (product.brand || product.model || product.sku)) && <span> • </span>}
+                      {product.brand && <span>Brand: {product.brand}</span>}
+                      {(product.brand && (product.model || product.sku)) && <span> • </span>}
                       {product.model && <span>Model: {product.model}</span>}
                       {product.model && product.sku && <span> • </span>}
                       {product.sku && <span>SKU: {product.sku}</span>}
@@ -294,7 +335,7 @@ export default function ProductSpecificationsList() {
 
       {/* Specifications List */}
       {selectedProductId && (
-        <div className="bg-white rounded-lg shadow">
+        <div ref={specsRef} className="bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Specifications</h2>

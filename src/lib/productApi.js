@@ -39,7 +39,7 @@ export const deleteProduct = async (id) => {
 
 // Search products
 export const searchProducts = async (searchTerm, params = {}) => {
-  const response = await api.get('/products/get.php', {
+  const response = await api.get('/products/search.php', {
     params: { q: searchTerm, ...params }
   });
   return response.data;

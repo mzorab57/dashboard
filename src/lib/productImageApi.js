@@ -9,6 +9,14 @@ export const getProductImages = async (params = {}) => {
 // Get product images by product ID
 export const getProductImagesByProductId = async (productId) => {
   const response = await api.get(`/product_images/get.php?product_id=${productId}`);
+
+  
+  return response.data;
+};
+
+// لێرەدا q دەنێرین بۆ ئەوەی باکئێند بزانێت سێرچە
+export const searchProductsForImages = async (query) => {
+  const response = await api.get(`/product_images/get.php?q=${query}`);
   return response.data;
 };
 
@@ -39,9 +47,7 @@ export const updateProductImage = async (id, data) => {
 
 // Delete product image
 export const deleteProductImage = async (id) => {
-  const response = await api.delete('/product_images/delete.php', {
-    data: { id }
-  });
+  const response = await api.post(`/product_images/delete.php?id=${id}`);
   return response.data;
 };
 

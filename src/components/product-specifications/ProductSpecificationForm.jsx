@@ -17,21 +17,50 @@ export default function ProductSpecificationForm({ onSubmit, initialData, isSubm
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
 
-  // Fetch products for dropdown
   const { data: productsData } = useQuery({
-    queryKey: ['products', { limit: 1000 }],
-    queryFn: () => getProducts({ limit: 1000 })
+    queryKey: ['products-all-for-selection'],
+    queryFn: async () => {
+      const perPage = 100;
+      const maxPages = 50;
+      let page = 1;
+      let out = [];
+      for (;;) {
+        const res = await getProducts({ is_active: 'all', page, limit: perPage });
+        const arr = Array.isArray(res) ? res : (res?.data || []);
+        out = out.concat(arr);
+        const p = res?.pagination;
+        if (p && p.pages) {
+          if (page >= p.pages) break;
+          page += 1;
+        } else {
+          if (arr.length < perPage) break;
+          page += 1;
+          if (page > maxPages) break;
+        }
+      }
+      return { data: out };
+    }
   });
 
   const products = productsData?.data || [];
   const selectedProduct = products.find(p => p.id == formData.product_id);
 
-  // Filter products based on search
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (product.model && product.model.toLowerCase().includes(productSearch.toLowerCase())) ||
-    (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase()))
-  );
+  const filteredProducts = (() => {
+    const q = (productSearch || '').trim().toLowerCase();
+    if (!q) return products;
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return products.filter(p => {
+      const hay = [
+        p.name,
+        p.model,
+        p.brand,
+        p.sku,
+        p.type,
+        p.category_name
+      ].map(s => (s || '').toLowerCase()).join(' ');
+      return tokens.every(t => hay.includes(t));
+    });
+  })();
 
   // Update form data when initialData or selectedProductId changes
   useEffect(() => {
@@ -164,6 +193,8 @@ export default function ProductSpecificationForm({ onSubmit, initialData, isSubm
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < filteredProducts.length) {
           handleProductSelect(filteredProducts[selectedIndex]);
+        } else if (filteredProducts.length > 0) {
+          handleProductSelect(filteredProducts[0]);
         }
         break;
       case 'Escape':
@@ -225,20 +256,16 @@ export default function ProductSpecificationForm({ onSubmit, initialData, isSubm
                     }`}
                   >
                     <div className="font-medium">{product.name}</div>
-                    <div className={`text-xs ${
-                      index === selectedIndex ? 'text-gray-600' : 'text-gray-500'
-                    }`}>
+                    <div className={`text-xs ${index === selectedIndex ? 'text-gray-600' : 'text-gray-500'}`}>
+                      {product.type && <span>Type: {product.type}</span>}
+                      {(product.type && (product.category_name || product.brand || product.model)) && <span> • </span>}
+                      {product.category_name && <span>Category: {product.category_name}</span>}
+                      {(product.category_name && (product.brand || product.model || product.sku)) && <span> • </span>}
+                      {product.brand && <span>Brand: {product.brand}</span>}
+                      {(product.brand && (product.model || product.sku)) && <span> • </span>}
                       {product.model && <span>Model: {product.model}</span>}
                       {product.model && product.sku && <span> • </span>}
                       {product.sku && <span>SKU: {product.sku}</span>}
-                      <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                        product.type === 'videography' ? 'bg-blue-100 text-blue-800' :
-                        product.type === 'photography' ? 'bg-green-100 text-green-800' :
-                        'bg-purple-100 text-purple-800'
-                      }`}>
-                        {product.type === 'videography' ? '🎥' :
-                         product.type === 'photography' ? '📸' : '🎬'}
-                      </span>
                     </div>
                   </div>
                 ))
