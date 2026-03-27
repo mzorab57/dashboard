@@ -32,26 +32,34 @@ export default function ProductsList() {
   const queryClient = useQueryClient();
   
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['products', page, debouncedSearch.trim(), filters],
+    // Load all products once (respecting filters), then filter locally by name/model/SKU
+    queryKey: ['products-all', filters],
     queryFn: async () => {
-      const params = { page, limit: 10 };
-      
-      // Add search query if provided
-      if (debouncedSearch.trim()) {
-        params.q = debouncedSearch.trim();
+      const perPage = 100;
+      let pageIdx = 1;
+      let out = [];
+      for (;;) {
+        const params = { page: pageIdx, limit: perPage };
+        if (filters.type) params.type = filters.type;
+        if (filters.brand) params.brand = filters.brand;
+        if (filters.min_price) params.min_price = filters.min_price;
+        if (filters.max_price) params.max_price = filters.max_price;
+        if (filters.is_active !== '') params.is_active = filters.is_active;
+        if (filters.is_featured !== '') params.is_featured = filters.is_featured;
+        const res = await getProducts(params);
+        const arr = Array.isArray(res) ? res : (res?.data || []);
+        out = out.concat(arr);
+        const p = res?.pagination;
+        if (p && p.pages) {
+          if (pageIdx >= p.pages) break;
+          pageIdx += 1;
+        } else {
+          if (arr.length < perPage) break;
+          pageIdx += 1;
+          if (pageIdx > 100) break;
+        }
       }
-      
-      // Add filters
-      if (filters.type) params.type = filters.type;
-      if (filters.brand) params.brand = filters.brand;
-      if (filters.min_price) params.min_price = filters.min_price;
-      if (filters.max_price) params.max_price = filters.max_price;
-  
-      if (filters.is_active !== '') params.is_active = filters.is_active;
-      if (filters.is_featured !== '') params.is_featured = filters.is_featured;
-      
-      // Use unified products API
-      return await getProducts(params);
+      return { data: out, pagination: { page: 1, pages: 1, total: out.length, limit: out.length } };
     },
     enabled: true,
     refetchOnWindowFocus: false
@@ -213,20 +221,20 @@ export default function ProductsList() {
     }
   }, [showBrandDropdown]);
 
-  // Pagination
+  // Client-side pagination + filtering
   const allProducts = data?.data || [];
-  const totalPages = data?.pagination?.pages || 1;
-  
-  // Client-side filtering for name, model, and SKU
+  const pageSize = 10;
   const [productSearch, setProductSearch] = useState('');
-  
   const filteredProducts = allProducts.filter(product => 
     product.name.toLowerCase().includes(productSearch.toLowerCase()) || 
     (product.model && product.model.toLowerCase().includes(productSearch.toLowerCase())) || 
     (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase())) 
   );
-  
-  const products = filteredProducts;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+  const start = (page - 1) * pageSize;
+  const end = start + pageSize;
+  const products = filteredProducts.slice(start, end);
+  useEffect(() => { setPage(1); }, [productSearch, filters]);
 
   // Debounce search input
   useEffect(() => {

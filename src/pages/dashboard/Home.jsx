@@ -92,7 +92,7 @@ export default function DashboardHome() {
                     <div className="size-16 shrink-0 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-inner overflow-hidden">
                       {p.primary_image_url ? (
                         <img 
-                            src={p.primary_image_url.startsWith('http') ? p.primary_image_url : `http://localhost/api${p.primary_image_url}`} 
+                            src={p.primary_image_url.startsWith('http') ? p.primary_image_url : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost/api')}/products/file.php?path=${encodeURIComponent(p.primary_image_url.includes('/uploads/') ? p.primary_image_url.slice(p.primary_image_url.indexOf('/uploads/')) : (p.primary_image_url.startsWith('/') ? p.primary_image_url : '/' + p.primary_image_url))}`} 
                           alt={p.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {

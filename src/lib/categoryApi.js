@@ -3,6 +3,9 @@ import api from './axios';
 // Get categories with pagination and search
 export const getCategories = async (params = {}) => {
   const response = await api.get('/categories/get.php', { params });
+  console.log(response.data);
+  console.log("response.data");
+  
   return response.data;
 };
 
